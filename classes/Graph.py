@@ -14,9 +14,13 @@ class Graph:
     def __init__(self, name: str = "new_graph"):
         self.name = name
         self.vertices = set()
+        self.edges = set()
 
     def add_vertex(self, vertex: Vertex) -> None:
         self.vertices.add(vertex)
+        for nvert in vertex.neighbours:
+            if (nvert, vertex) not in self.edges:
+                self.edges.add((vertex, nvert))
 
     def save(self) -> None:
         vertex_data = dict()

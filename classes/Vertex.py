@@ -21,6 +21,8 @@ class Vertex:
         if self != other:
             self.neighbours.add(other)
             other.neighbours.add(self)
+            if (self, other) not in self.parent.edges:
+                self.parent.edges.add((other, self))
         elif SELF_LOOPS:
             self.neighbours.add(other)
             other.neighbours.add(self)
