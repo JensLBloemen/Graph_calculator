@@ -13,19 +13,21 @@ if TYPE_CHECKING:
 class Graph:
     def __init__(self, name: str = "new_graph"):
         self.name = name
+
         self.vertices = set()
         self.edges = set()
 
     def add_vertex(self, vertex: Vertex) -> None:
+
         self.vertices.add(vertex)
         for nvert in vertex.neighbours:
-            if (nvert, vertex) not in self.edges:
+            if (nvert, vertex) not in self.edges and vertex != nvert:
                 self.edges.add((vertex, nvert))
 
     def save(self) -> None:
         vertex_data = dict()
         for vertex in self.vertices:
-            vertex_data[vertex.id] = [ver.id for ver in vertex.neighbours]
+            vertex_data[vertex.id] = [vertex.location, [ver.id for ver in vertex.neighbours]]
         data = {
             "vertices": vertex_data,
         }

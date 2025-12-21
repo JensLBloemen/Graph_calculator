@@ -1,5 +1,4 @@
 
-from tkinter import * 
 import tkinter as tk
 from tkinter import ttk
 from matplotlib.figure import Figure
@@ -9,24 +8,47 @@ NavigationToolbar2Tk)
 # plot function is created for 
 # plotting the graph in 
 # tkinter window
+
+
+
+
 def plot(window, graph):
 
     # the figure that will contain the plot
     fig = Figure(figsize = (5, 5),
                  dpi = 100)
+    
+    def onclick(event):
 
+        if event.artist is not sc:
+            return
+        ind = event.ind  # indices of picked points (can be multiple)
+        i = ind[0]
+        print(f"Picked index={i}, (x,y)=()")
+        selected_vertex = vertices[i]
+
+        fc = [(0,1,0,1) for _ in range(len(vertices))]
+        fc[i] = (1, 0, 0, 1)
+
+        sc.set_facecolors(fc)
+        fig.canvas.draw_idle()
+
+
+    cid = fig.canvas.mpl_connect('pick_event', onclick)
+
+    # fig.canvas.mpl_disconnect(cid)
 
     # adding the subplot
     plot1 = fig.add_subplot(111)
 
+    vertices = [v for v in graph.vertices]
+    print(vertices)
+    print(*(v.location for v in vertices))
+    x, y = zip(*(v.location for v in vertices))
 
-    for vertex in graph.vertices:
-        x, y = vertex.location
-    # plotting the graph
-        plot1.scatter(x, y)
-    
+    sc = plot1.scatter(x, y, s=60, picker = True)
+
     for edge in graph.edges:
-        print(edge)
         x1, y1 = edge[0].location
         x2, y2 = edge[1].location
         
@@ -53,28 +75,22 @@ def plot(window, graph):
 
 class App:
     def __init__(self, graph):
-        self.window = Tk()
+        self.window = tk.Tk()
 
         # setting the title 
         self.window.title('Plotting in Tkinter')
-        pass
-
-
-
-
 
         # dimensions of the main window
         self.window.geometry("500x500")
 
         # button that displays the plot
-        plot_button = Button(master = self.window, 
+        plot_button = tk.Button(master = self.window, 
                             command = lambda: plot(self.window, graph),
                             height = 2, 
                             width = 10,
                             text = "Plot")
 
-        # place the button 
-        # in main window
+
         plot_button.pack()
         def select(event):
             selected_item = combo_box.get()

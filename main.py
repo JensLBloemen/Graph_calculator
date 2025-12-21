@@ -2,6 +2,9 @@ from classes.graph import Graph
 from classes.vertex import Vertex
 from gui.gui import App
 import random
+from gui.helper_functions.loadgraph import load_graph
+
+G = load_graph("new_graph.json")
 
 
 def create_full_graph(n):
@@ -22,6 +25,9 @@ def create_full_graph(n):
 # vertex4 = Vertex(G, (1,1), 4)
 
 # vertex1.add_neighbour(vertex2)
+
+# vertex1.add_neighbour(vertex3)
+
 # vertex2.add_neighbour(vertex3)
 # vertex3.add_neighbour(vertex4)
 
@@ -29,10 +35,10 @@ def create_full_graph(n):
 # G.add_vertex(vertex2)
 # G.add_vertex(vertex3)
 # G.add_vertex(vertex4)
-
-G = create_full_graph(5)
+# G.save()
 
 
 if __name__ == "__main__":
     app = App(G)
     app.run()
+    G.save()

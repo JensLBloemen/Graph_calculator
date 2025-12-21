@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 SELF_LOOPS = False
 
 class Vertex:
-    def __init__(self, graph: Graph, location: tuple[int, int], id: int):
+    def __init__(self, graph: Graph, location: tuple[float, float], id: int):
         self.location = location
         self.id = id
         self.parent = graph
@@ -20,7 +20,8 @@ class Vertex:
     def add_neighbour(self, other: Vertex) -> None:
         if self != other:
             self.neighbours.add(other)
-            other.neighbours.add(self)
+            if self not in other.neighbours:
+                other.add_neighbour(self)
             if (self, other) not in self.parent.edges:
                 self.parent.edges.add((other, self))
         elif SELF_LOOPS:
