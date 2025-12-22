@@ -12,7 +12,10 @@ if TYPE_CHECKING:
 
 class Graph:
     def __init__(self, name: str = "new_graph"):
-        self.name = name
+        if name.endswith(".json"):
+            self.name = name[:-5]
+        else:
+            self.name = name
 
         self.vertices = set()
         self.edges = set()
