@@ -20,12 +20,31 @@ class Graph:
         self.vertices = set()
         self.edges = set()
 
+        self.ids = dict()
+
     def add_vertex(self, vertex: Vertex) -> None:
 
+
         self.vertices.add(vertex)
+        while vertex.id in self.ids:
+            vertex.id += 1
+
+        self.ids[vertex.id] = vertex
+
         for nvert in vertex.neighbours:
             if (nvert, vertex) not in self.edges and vertex != nvert:
                 self.edges.add((vertex, nvert))
+
+    def delete_vertex(self, vertex: Vertex):
+        neighbours = vertex.neighbours
+        self.vertices.remove(vertex)
+        for nvert in neighbours:
+            if (vertex, nvert) in self.edges:
+                self.edges.remove((vertex, nvert))
+            else:
+                self.edges.remove((nvert, vertex))
+            nvert.neighbours.remove(vertex)
+
 
     def save(self) -> None:
         vertex_data = dict()
