@@ -10,6 +10,11 @@ from gui.helper_functions.loadgraph import load_graph
 from classes.graph import Graph
 from classes.vertex import Vertex
 
+from libs.chromaticpol import get_chromatic_polynomial
+import threading
+import queue
+import tkinter.messagebox as mb
+
 # plot function is created for 
 # plotting the graph in 
 # tkinter window
@@ -36,6 +41,14 @@ class App:
         # buttons to manipulate the graphs
         btn_bar = tk.Frame(self.window)
         btn_bar.pack(fill="x", padx=10, pady=10)
+
+
+        self.status = tk.Label(self.window, text="Ready")
+        self.status.pack(pady=5)
+
+        self.pb = ttk.Progressbar(self.window, mode="indeterminate")
+        self.pb.pack(fill="x", padx=10, pady=5)
+
 
         plot_button = tk.Button(btn_bar, 
                             command = self.plot,
@@ -79,6 +92,12 @@ class App:
                                 width=10,
                                 text="contract edge")
 
+        self.chrom_pol_button = tk.Button(btn_bar,
+                                command = self.chrom_pol,
+                                height=2,
+                                width=10,
+                                text="chromatic polynomial")
+
         # put them next to each other
         plot_button.grid(row=0, column=0, padx=5)
         add_vertex_button.grid(row=0, column=1, padx=5)
@@ -87,8 +106,9 @@ class App:
         save_button.grid(row=0, column=4, padx=5)
         del_edge_button.grid(row=0, column=5, padx=5)
         contract_edge_button.grid(row=0, column=6, padx=5)
+        self.chrom_pol_button.grid(row=0, column=7, padx=5)
 
-        for c in range(5):
+        for c in range(8):
             btn_bar.grid_columnconfigure(c, weight=1)
 
 
@@ -165,9 +185,68 @@ class App:
         self.graph.contract_edge((self.previous_selected, self.selected_vertex))
         self.plot()
 
+    def chrom_pol(self):
+        m = len(self.graph.edges)
+        if m > 10:
+            # worst-case estimate (very rough)
+            mb.showwarning(
+                "May be slow",
+                f"This graph has {m} edges.\n"
+                f"Deletion–contraction may explore up to ~2^{m} branches.\n"
+                f"Progress will be shown; you can still use the UI."
+            )
+
+        self.chrom_pol_button.config(state="disabled")
+        self.status.config(text="Computing chromatic polynomial...")
+        self.pb.start(10)
+
+        q = queue.Queue()
+
+        def progress_cb(iters, stack_size):
+            q.put(("progress", iters, stack_size))
+
+        def worker():
+            try:
+                poly = get_chromatic_polynomial(self.graph, progress_cb=progress_cb)
+                q.put(("done", poly))
+            except Exception as e:
+                q.put(("error", str(e)))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+        def poll():
+            try:
+                while True:
+                    msg = q.get_nowait()
+                    if msg[0] == "progress":
+                        _, iters, stack_size = msg
+                        self.status.config(
+                            text=f"Visited nodes: {iters:,} | Stack: {stack_size:,}"
+                        )
+                    elif msg[0] == "done":
+                        _, poly = msg
+                        self.pb.stop()
+                        self.chrom_pol_button.config(state="normal")
+                        self.status.config(text=f"Done: {poly}")
+                        print(poly)  # also print to console
+                        print(f"Iterates: {iters}")
+                        return
+                    elif msg[0] == "error":
+                        _, err = msg
+                        self.pb.stop()
+                        self.chrom_pol_button.config(state="normal")
+                        self.status.config(text="Error")
+                        mb.showerror("Chromatic polynomial error", err)
+                        return
+            except queue.Empty:
+                pass
+
+            self.window.after(50, poll)
+
+        poll()
+
     def save_graph(self):
         self.graph.save()
-        print(str(self.graph.chromatic_polynomial))
 
     def plot(self):
     
@@ -182,7 +261,6 @@ class App:
             i = ind[0]
 
             self.previous_selected = self.selected_vertex
-            print(self.graph.edges)
 
             self.selected_vertex = vertices[i]
             
