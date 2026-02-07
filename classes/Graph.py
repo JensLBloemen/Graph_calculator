@@ -4,6 +4,8 @@ Docstring for Classes.Graph
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from libs.chromaticpol import get_chromatic_polynomial
+from copy import deepcopy
 import json
 
 if TYPE_CHECKING:
@@ -35,6 +37,21 @@ class Graph:
             if (nvert, vertex) not in self.edges and vertex != nvert:
                 self.edges.add((vertex, nvert))
 
+    def delete_edge(self, edge: tuple[Vertex, Vertex]) -> None:
+        u, v = edge
+        if (u, v) not in self.edges:
+            u, v = v, u
+        if (u, v) not in self.edges:  ## Edge does not exist
+            return
+        self.edges.remove((u, v))
+
+    def contract_edge(self, edge:  tuple[Vertex, Vertex]) -> None:
+        ## Self-loops become important!!
+        return
+
+
+
+
     def delete_vertex(self, vertex: Vertex):
         neighbours = vertex.neighbours
         self.vertices.remove(vertex)
@@ -44,6 +61,13 @@ class Graph:
             else:
                 self.edges.remove((nvert, vertex))
             nvert.neighbours.remove(vertex)
+
+    def copy(self):
+        return deepcopy(self)
+
+    @property
+    def chromatic_polynomial(self):
+        return get_chromatic_polynomial(self)
 
 
     def save(self) -> None:

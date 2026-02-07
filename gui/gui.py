@@ -67,6 +67,11 @@ class App:
                                     width = 10,
                                     text = "Save graph")
 
+        del_edge_button = tk.Button(btn_bar,
+                                command = self.delete_edge,
+                                height=2,
+                                width=10,
+                                text="delete edge")
 
         # put them next to each other
         plot_button.grid(row=0, column=0, padx=5)
@@ -74,6 +79,7 @@ class App:
         delete_button.grid(row=0, column=2, padx=5)
         add_edge_button.grid(row=0, column=3, padx=5)
         save_button.grid(row=0, column=4, padx=5)
+        del_edge_button.grid(row=0, column=5, padx=5)
 
         for c in range(5):
             btn_bar.grid_columnconfigure(c, weight=1)
@@ -140,8 +146,15 @@ class App:
         self.previous_selected = None
         self.plot()
 
+    def delete_edge(self):
+        if self.previous_selected is None:
+            return
+        self.graph.delete_edge((self.previous_selected, self.selected_vertex))
+        self.plot()
+
     def save_graph(self):
         self.graph.save()
+        print(str(self.graph.chromatic_polynomial))
 
     def plot(self):
     
