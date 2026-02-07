@@ -18,5 +18,53 @@ if TYPE_CHECKING:
 from classes.vertex import Vertex
 from classes.polynomial import Polynomial
 
+
+
 def get_chromatic_polynomial(G: Graph):
-    return
+    it = 0
+
+    stack = [(G.copy(), 1)]  # graph, sign
+    polynomials = []
+    while stack:
+        graph, sign = stack.pop()
+
+        graph.name = f"iteration {it}"
+        print(it, sign)
+        graph.save()
+        it += 1
+
+        if graph.edges:
+
+            G1 = graph.copy()
+            G2 = graph.copy()
+
+            edge1 = next(iter(G1.edges))         # frozenset({u, v})
+            a, b = tuple(edge1)
+            id1, id2 = a.id, b.id
+
+            u = None
+            v = None
+            for vertex in G2.vertices:
+                if vertex.id == id1:
+                    u = vertex
+                if vertex.id == id2:
+                    v = vertex
+
+            # edge2 = (u, v)
+            assert u is not None
+            assert v is not None
+
+            G1.contract_edge(edge1)
+            G2.delete_edge(frozenset({u, v}))
+
+
+
+            stack.append((G1, -sign))
+            stack.append((G2, sign))
+        else:
+            # print("yes")
+            pol_data = [0 for _ in graph.vertices]
+            pol_data.append(sign)
+            print(str(Polynomial(*pol_data)))
+            polynomials.append(Polynomial(*pol_data))
+    return str(sum(polynomials))

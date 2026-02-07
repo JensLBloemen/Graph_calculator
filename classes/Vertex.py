@@ -22,13 +22,12 @@ class Vertex:
             self.neighbours.add(other)
             if self not in other.neighbours:
                 other.add_neighbour(self)
-            if (self, other) not in self.parent.edges:
-                self.parent.edges.add((other, self))
+            self.parent.edges.add(frozenset({self, other}))
         elif SELF_LOOPS:
             self.neighbours.add(other)
             other.neighbours.add(self)
 
 
-    @staticmethod
+    @property
     def degree(self):
         return len(self.neighbours)

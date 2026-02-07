@@ -25,8 +25,6 @@ class Graph:
         self.ids = dict()
 
     def add_vertex(self, vertex: Vertex) -> None:
-
-
         self.vertices.add(vertex)
         while vertex.id in self.ids:
             vertex.id += 1
@@ -34,20 +32,40 @@ class Graph:
         self.ids[vertex.id] = vertex
 
         for nvert in vertex.neighbours:
-            if (nvert, vertex) not in self.edges and vertex != nvert:
-                self.edges.add((vertex, nvert))
+            if vertex != nvert:
+                self.edges.add(frozenset({vertex, nvert}))
 
     def delete_edge(self, edge: tuple[Vertex, Vertex]) -> None:
+        if isinstance(edge, frozenset):
+            e = edge
+        else:
+            u, v = edge
+            e = frozenset({u, v})
+        
         u, v = edge
-        if (u, v) not in self.edges:
-            u, v = v, u
-        if (u, v) not in self.edges:  ## Edge does not exist
-            return
-        self.edges.remove((u, v))
+
+        u.neighbours.discard(v)
+        v.neighbours.discard(u)
+
+        self.edges.discard(e)
 
     def contract_edge(self, edge:  tuple[Vertex, Vertex]) -> None:
-        ## Self-loops become important!!
-        return
+
+        # edge is frozenset({u, v}) OR a 2-tuple (u, v)
+        if isinstance(edge, frozenset):
+            u, v = tuple(edge)
+        else:
+            u, v = edge
+
+        # remove the edge itself (optional, but keeps edges tidy)
+        self.delete_edge(frozenset({u, v}))
+
+        v_neighbors = set(v.neighbours)  # copy
+        self.delete_vertex(v)
+
+        for neighbor in v_neighbors:
+            if neighbor is not u:
+                u.add_neighbour(neighbor)
 
 
 
@@ -55,12 +73,11 @@ class Graph:
     def delete_vertex(self, vertex: Vertex):
         neighbours = vertex.neighbours
         self.vertices.remove(vertex)
-        for nvert in neighbours:
-            if (vertex, nvert) in self.edges:
-                self.edges.remove((vertex, nvert))
-            else:
-                self.edges.remove((nvert, vertex))
-            nvert.neighbours.remove(vertex)
+        for nvert in list(neighbours):
+            self.delete_edge(frozenset({vertex, nvert}))
+            nvert.neighbours.discard(vertex)
+        self.ids.pop(vertex.id, None)
+
 
     def copy(self):
         return deepcopy(self)

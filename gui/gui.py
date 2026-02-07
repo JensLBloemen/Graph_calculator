@@ -72,6 +72,12 @@ class App:
                                 height=2,
                                 width=10,
                                 text="delete edge")
+        
+        contract_edge_button = tk.Button(btn_bar,
+                                command = self.contract_edge,
+                                height=2,
+                                width=10,
+                                text="contract edge")
 
         # put them next to each other
         plot_button.grid(row=0, column=0, padx=5)
@@ -80,6 +86,7 @@ class App:
         add_edge_button.grid(row=0, column=3, padx=5)
         save_button.grid(row=0, column=4, padx=5)
         del_edge_button.grid(row=0, column=5, padx=5)
+        contract_edge_button.grid(row=0, column=6, padx=5)
 
         for c in range(5):
             btn_bar.grid_columnconfigure(c, weight=1)
@@ -152,6 +159,12 @@ class App:
         self.graph.delete_edge((self.previous_selected, self.selected_vertex))
         self.plot()
 
+    def contract_edge(self):
+        if self.previous_selected is None:
+            return
+        self.graph.contract_edge((self.previous_selected, self.selected_vertex))
+        self.plot()
+
     def save_graph(self):
         self.graph.save()
         print(str(self.graph.chromatic_polynomial))
@@ -169,6 +182,7 @@ class App:
             i = ind[0]
 
             self.previous_selected = self.selected_vertex
+            print(self.graph.edges)
 
             self.selected_vertex = vertices[i]
             
@@ -195,9 +209,9 @@ class App:
             cid = self.fig.canvas.mpl_connect('pick_event', onclick)
 
             for edge in self.graph.edges:
-                x1, y1 = edge[0].location
-                x2, y2 = edge[1].location
-                
+                u, v = tuple(edge)
+                x1, y1 = u.location
+                x2, y2 = v.location
                 self.plot1.plot([x1, x2], [y1, y2])
                 
 
