@@ -29,7 +29,7 @@ def get_chromatic_polynomial(G: Graph):
         graph, sign = stack.pop()
 
         graph.name = f"iteration {it}"
-        print(it, sign)
+
         graph.save()
         it += 1
 
@@ -65,6 +65,5 @@ def get_chromatic_polynomial(G: Graph):
             # print("yes")
             pol_data = [0 for _ in graph.vertices]
             pol_data.append(sign)
-            print(str(Polynomial(*pol_data)))
             polynomials.append(Polynomial(*pol_data))
     return str(sum(polynomials))
