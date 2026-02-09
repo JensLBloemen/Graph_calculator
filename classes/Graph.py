@@ -8,8 +8,8 @@ from libs.chromaticpol import get_chromatic_polynomial
 from copy import deepcopy
 import json
 
-if TYPE_CHECKING:
-    from classes.vertex import Vertex
+# if TYPE_CHECKING:
+from classes.vertex import Vertex
 
 
 class Graph:
@@ -34,6 +34,10 @@ class Graph:
         for nvert in vertex.neighbours:
             if vertex != nvert:
                 self.edges.add(frozenset({vertex, nvert}))
+
+    def add_edge(self, edge: tuple[Vertex, Vertex]) -> None:
+        v1, v2 = edge
+        v1.add_neighbour(v2)
 
     def delete_edge(self, edge: tuple[Vertex, Vertex]) -> None:
         if isinstance(edge, frozenset):
@@ -67,9 +71,6 @@ class Graph:
             if neighbor is not u:
                 u.add_neighbour(neighbor)
 
-
-
-
     def delete_vertex(self, vertex: Vertex):
         neighbours = vertex.neighbours
         self.vertices.remove(vertex)
@@ -78,9 +79,18 @@ class Graph:
             nvert.neighbours.discard(vertex)
         self.ids.pop(vertex.id, None)
 
-
     def copy(self):
-        return deepcopy(self)
+        new_graph = Graph(self.name)
+        vertex_dict = dict()
+        for vertex in self.vertices:
+            new_vertex = Vertex(new_graph, vertex.location, vertex.id)
+            new_graph.add_vertex(new_vertex)
+            vertex_dict[vertex] = new_vertex
+
+        for edge in self.edges:
+            v1, v2 = edge
+            new_graph.add_edge((vertex_dict[v1], vertex_dict[v2]))
+        return new_graph
 
     @property
     def chromatic_polynomial(self):

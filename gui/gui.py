@@ -187,7 +187,7 @@ class App:
 
     def chrom_pol(self):
         m = len(self.graph.edges)
-        if m > 10:
+        if m > 30:
             # worst-case estimate (very rough)
             mb.showwarning(
                 "May be slow",
@@ -207,8 +207,82 @@ class App:
 
         def worker():
             try:
-                poly = get_chromatic_polynomial(self.graph, progress_cb=progress_cb)
-                q.put(("done", poly))
+                poly = get_chromatic_polynomial(self.graph, progress_cb=progress_cb)  # Normal polynomial
+                print("Full poly: ", poly)
+
+                # sut=111 polynomial
+                H = self.graph.copy()
+                s = H.ids["s"]
+                t = H.ids["t"]
+                u = H.ids["u"]
+
+                if frozenset({u,t}) in H.edges or frozenset({s,t}) in H.edges or frozenset({s,u}) in H.edges:
+                    poly111 = 0
+                else:
+                    s.add_neighbour(t)
+                    s.add_neighbour(u)
+                    t.add_neighbour(u)
+
+                    H.contract_edge((u, t))
+                    H.contract_edge((s, u))
+
+                    poly111 = get_chromatic_polynomial(H, progress_cb=progress_cb)
+                print("Poly111: ", poly111)
+
+                # Poly112
+                H = self.graph.copy()
+
+                s = H.ids["s"]
+                t = H.ids["t"]
+                u = H.ids["u"]
+                if frozenset({u,s}) in H.edges:
+                    poly112 = 0
+                else:
+                    u.add_neighbour(s)
+                    u.add_neighbour(t)
+                    H.contract_edge((s, u))
+                    poly112 = get_chromatic_polynomial(H, progress_cb=progress_cb)
+                print("Poly112:  ", poly112)
+
+
+
+                H = self.graph.copy()
+
+                s = H.ids["s"]
+                t = H.ids["t"]
+                u = H.ids["u"]
+
+                s.add_neighbour(t)
+                s.add_neighbour(u)
+                t.add_neighbour(u)
+
+                poly123 = get_chromatic_polynomial(H, progress_cb=progress_cb)
+                print("poly123: ", poly123)
+
+
+                H = self.graph.copy()
+
+                s = H.ids["s"]
+                t = H.ids["t"]
+                u = H.ids["u"]
+
+                if frozenset({u,t}) in H.edges:
+                    polyH2 = 0
+                else:
+
+                    t.add_neighbour(u)
+                    t.add_neighbour(s)
+                    H.contract_edge((t, u))
+
+
+                    polyH2 = get_chromatic_polynomial(H, progress_cb=progress_cb)
+                print(polyH2, "sut=122")
+                q.put(("done", polyH2))
+
+
+                
+
+
             except Exception as e:
                 q.put(("error", str(e)))
 
@@ -285,6 +359,11 @@ class App:
 
             sc = self.plot1.scatter(x, y, s=60, picker = True, c='b')
             cid = self.fig.canvas.mpl_connect('pick_event', onclick)
+
+            for v in vertices:
+                x0, y0 = v.location
+                self.plot1.annotate(str(v.id), (x0, y0),
+                                    textcoords="offset points", xytext=(6, 6), fontsize=10)
 
             for edge in self.graph.edges:
                 u, v = tuple(edge)

@@ -23,7 +23,7 @@ from classes.polynomial import Polynomial
 
 def get_chromatic_polynomial(G: Graph, progress_cb=None):
     stack = [(G.copy(), 1)]
-    polynomial = Polynomial()
+    coeffs = [0 for _ in G.vertices] + [0]
 
     it = 0
     last = time.time()
@@ -42,21 +42,15 @@ def get_chromatic_polynomial(G: Graph, progress_cb=None):
                 last = now
 
         if graph.edges:
-            G1 = graph.copy()
+            G1 = graph
             G2 = graph.copy()
 
             edge1 = next(iter(G1.edges))
             a, b = tuple(edge1)
             id1, id2 = a.id, b.id
 
-            u = v = None
-            for vertex in G2.vertices:
-                if vertex.id == id1:
-                    u = vertex
-                elif vertex.id == id2:
-                    v = vertex
-
-            assert u is not None and v is not None
+            u = G2.ids[id1]
+            v = G2.ids[id2]
 
             G1.contract_edge(edge1)
             G2.delete_edge(frozenset({u, v}))
@@ -65,11 +59,10 @@ def get_chromatic_polynomial(G: Graph, progress_cb=None):
             stack.append((G2, sign))
         else:
             n = len(graph.vertices)
-            coeffs = [0] * n + [sign]
-            polynomial += Polynomial(*coeffs)
+            coeffs[n] += sign
 
     # final progress update
     if progress_cb is not None:
         progress_cb(it, 0)
 
-    return polynomial  # return Polynomial, not str
+    return Polynomial(*coeffs)  # return Polynomial, not str

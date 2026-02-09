@@ -15,11 +15,11 @@ def load_graph(name):
     graph = Graph(name)
 
     for vertex in vertex_data:
-        vertex_dict[int(vertex)] = Vertex(graph, tuple(vertex_data[vertex][0]), int(vertex))
+        vertex_dict[vertex] = Vertex(graph, tuple(vertex_data[vertex][0]), (vertex))
 
     for vertex in vertex_data:
         for j in vertex_data[vertex][1]:
-            vertex_dict[int(vertex)].add_neighbour(vertex_dict[j])
+            vertex_dict[vertex].add_neighbour(vertex_dict[str(j)])
 
     for vertex_id in vertex_dict:
         graph.add_vertex(vertex_dict[vertex_id])
