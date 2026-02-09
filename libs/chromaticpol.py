@@ -19,13 +19,14 @@ if TYPE_CHECKING:
 from classes.polynomial import Polynomial
 
 
+it = 0
 
 
 def get_chromatic_polynomial(G: Graph, progress_cb=None):
+    global it
     stack = [(G.copy(), 1)]
     coeffs = [0 for _ in G.vertices] + [0]
 
-    it = 0
     last = time.time()
 
     while stack:
@@ -66,3 +67,84 @@ def get_chromatic_polynomial(G: Graph, progress_cb=None):
         progress_cb(it, 0)
 
     return Polynomial(*coeffs)  # return Polynomial, not str
+
+def get_all_chromatic_polynomials(G: Graph, progress_cb = None) -> tuple[Polynomial, ...]:
+
+    #labels = sut
+    assert 's' in G.ids and 'u' in G.ids and 't' in G.ids, "Does not contain sut vertices"
+
+    def get111():
+        H = G.copy()
+        s = H.ids['s']
+        u = H.ids['u']
+        t = H.ids['t']
+        if (s, u) in H or (s, t) in H or (u, t) in H:
+            return Polynomial()
+
+        H.add_edge((s, u))
+        H.add_edge((s, t))
+        H.add_edge((t, u))
+
+        H.contract_edge((s, u))
+        H.contract_edge((s, t))
+
+        return get_chromatic_polynomial(H, progress_cb)
+        
+    def get112():
+        H = G.copy()
+        s = H.ids['s']
+        u = H.ids['u']
+        t = H.ids['t']
+        if (s, u) in H:
+            return Polynomial()
+
+        H.add_edge((s, u))
+        H.add_edge((t, u))
+
+        H.contract_edge((s, u))
+
+        return get_chromatic_polynomial(H, progress_cb)
+
+    def get122():
+        H = G.copy()
+        s = H.ids['s']
+        u = H.ids['u']
+        t = H.ids['t']
+        if (t, u) in H:
+            return Polynomial()
+
+        H.add_edge((s, u))
+        H.add_edge((t, u))
+
+        H.contract_edge((t, u))
+
+        return get_chromatic_polynomial(H, progress_cb)
+    
+    def get121():
+        H = G.copy()
+        s = H.ids['s']
+        u = H.ids['u']
+        t = H.ids['t']
+        if (s, t) in H:
+            return Polynomial()
+
+        H.add_edge((s, u))
+        H.add_edge((t, u))
+
+        H.contract_edge((s, t))
+
+        return get_chromatic_polynomial(H, progress_cb)
+
+    def get123():
+        H = G.copy()
+        s = H.ids['s']
+        u = H.ids['u']
+        t = H.ids['t']
+
+        H.add_edge((s, u))
+        H.add_edge((t, u))
+        H.add_edge((t, s))
+
+        return get_chromatic_polynomial(H, progress_cb)
+
+    return (get111(), get112(), get121(), get122(), get123())

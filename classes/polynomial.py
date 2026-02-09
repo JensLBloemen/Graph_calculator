@@ -17,6 +17,9 @@ class Polynomial:
             terms = terms[:-1]
 
         return Polynomial(*terms)
+    
+    def __eq__(self, other):
+        return all(t1 == t2 for t1, t2 in zip(self._terms, other._terms) )
 
     def __radd__(self, other):
         # makes sum([p1, p2, ...]) work (since sum starts with 0)

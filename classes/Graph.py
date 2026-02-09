@@ -3,12 +3,8 @@ Docstring for Classes.Graph
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
 from libs.chromaticpol import get_chromatic_polynomial
-from copy import deepcopy
 import json
-
-# if TYPE_CHECKING:
 from classes.vertex import Vertex
 
 
@@ -92,10 +88,16 @@ class Graph:
             new_graph.add_edge((vertex_dict[v1], vertex_dict[v2]))
         return new_graph
 
+    def __contains__(self, value):
+        if type(value) == tuple or type(value) == frozenset:
+            return frozenset(value) in self.edges
+        if type(value) == Vertex:
+            return value in self.ids
+        raise KeyError
+
     @property
     def chromatic_polynomial(self):
         return get_chromatic_polynomial(self)
-
 
     def save(self) -> None:
         vertex_data = dict()
