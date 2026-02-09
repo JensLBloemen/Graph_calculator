@@ -11,11 +11,16 @@ SELF_LOOPS = False
 
 class Vertex:
     def __init__(self, graph: Graph, location: tuple[float, float], id: int):
-        self.location = location
-        self.id = id
-        self.parent = graph
+        self.location: tuple[float, float] = location
+        self.id: str = id
+        self.parent: Graph = graph
+        self.neighbours: set[Vertex] = set()
 
-        self.neighbours = set()
+    def change_id(self, id):
+        if id in self.parent.ids:
+            return
+        self.parent.ids[id] = self.parent.ids.pop(self.id)
+        self.id = id
 
     def add_neighbour(self, other: Vertex) -> None:
         if self != other:

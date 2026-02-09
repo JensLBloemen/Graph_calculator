@@ -1,4 +1,3 @@
-from libs.special_graphs import create_full_graph
 from gui.gui import App
 
 

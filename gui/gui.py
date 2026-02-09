@@ -357,11 +357,12 @@ class App:
             xlim = ylim = None
 
         self.plot1.clear()
+        self.plot1.set_aspect("equal", adjustable="box")
 
         vertices = list(self.graph.vertices)
         if vertices:
             x, y = zip(*(v.location for v in vertices))
-            sc = self.plot1.scatter(x, y, s=60, c='b')
+            sc = self.plot1.scatter(x, y, s=6, c='b')
 
             # highlight selected vertex in red
             if self.selected_vertex in vertices:
@@ -372,12 +373,13 @@ class App:
 
             for v in vertices:
                 x0, y0 = v.location
-                self.plot1.annotate(
-                    str(v.id),
-                    (x0, y0),
-                    textcoords="offset points",
-                    xytext=(6, 6),
-                    fontsize=10
+                if v.id in {'s', 't', 'u'}:
+                    self.plot1.annotate(
+                        str(v.id),
+                        (x0, y0),
+                        textcoords="offset points",
+                        xytext=(6, 6),
+                        fontsize=10
                 )
 
             for edge in self.graph.edges:

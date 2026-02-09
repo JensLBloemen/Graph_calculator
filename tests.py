@@ -33,13 +33,13 @@ def test1():
 
         return G
 
-    for _ in range(20):
+    for _ in range(50):
 
-        n = random.randint(0, 30)
-        m = random.randint(0, 20)
-        
+        n = random.randint(0, 20)
+        m = random.randint(0, 15)
         G = random_graph(n, m)
         assert sum(get_all_chromatic_polynomials(G)) == get_chromatic_polynomial(G)
+        # print("Passed test", n, m)
 
 test1()
 print("Passed all tests")

@@ -15,10 +15,10 @@ class Graph:
         else:
             self.name = name
 
-        self.vertices = set()
-        self.edges = set()
+        self.vertices: set[Vertex] = set()
+        self.edges: set[frozenset[Vertex, Vertex]] = set()
 
-        self.ids = dict()
+        self.ids: dict[str: Vertex] = dict()
 
     def add_vertex(self, vertex: Vertex) -> None:
         self.vertices.add(vertex)
