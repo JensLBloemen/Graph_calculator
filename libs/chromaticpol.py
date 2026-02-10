@@ -26,52 +26,100 @@ it = 0
 
 
 
-def get_chromatic_polynomial(G: Graph, progress_cb=None):
-    global it
-    stack = [(G.copy(), 1)]
-    coeffs = [0 for _ in G.vertices] + [0]
+import os
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
 
-    last = time.time()
+def _chrompoly_subtree(graph: "Graph", sign: int, n0: int) -> list[int]:
+    """Compute partial coefficient vector for one (graph, sign) subtree."""
+    stack: list[tuple["Graph", int]] = [(graph, sign)]
+    coeffs = [0] * (n0 + 1)
 
     while stack:
-        graph, sign = stack.pop()
+        g, s = stack.pop()
 
-        it += 1
-        if not TIMETEST:
-            time.sleep(0)      # yields to other threads
+        if g.edges:
+            G1 = g
+            G2 = g.copy()
 
-        # progress update (throttled)
-        if progress_cb is not None:
-            now = time.time()
-            if now - last > 0.05:  # ~20 updates/sec max
-                progress_cb(it, len(stack))
-                last = now
-
-        if graph.edges:
-            G1 = graph
-            G2 = graph.copy()
-
-            edge1 = next(iter(G1.edges))
-            a, b = (edge1)
+            edge = next(iter(G1.edges))
+            a, b = tuple(edge)
             id1, id2 = a.id, b.id
 
             u = G2.ids[id1]
             v = G2.ids[id2]
 
-            G1.contract_edge(edge1)
+            G1.contract_edge(edge)
             G2.delete_edge(frozenset({u, v}))
 
-            stack.append((G1, -sign))
-            stack.append((G2, sign))
+            stack.append((G1, -s))
+            stack.append((G2,  s))
         else:
-            n = len(graph.vertices)
-            coeffs[n] += sign
+            coeffs[len(g.vertices)] += s
 
-    # final progress update
-    if progress_cb is not None:
-        progress_cb(it, 0)
+    return coeffs
 
-    return Polynomial(*coeffs)  # return Polynomial, not str
+
+def get_chromatic_polynomial(G: "Graph", workers: int | None = None, task_factor: int = 4) -> "Polynomial":
+    """
+    Parallel deletion–contraction using process-based parallelism (uses all logical CPUs by default).
+    NOTE (Windows): call this from inside `if __name__ == "__main__":` (or an equivalent entrypoint).
+    """
+    n0 = len(G.vertices)
+    if n0 == 0:
+        return Polynomial(0)  # or Polynomial(1) depending on your convention
+
+    if workers is None:
+        workers = os.cpu_count() or 1
+    workers = max(1, int(workers))
+
+    # Build a frontier of independent subproblems to distribute.
+    target_tasks = max(workers * int(task_factor), 1)
+    frontier: list[tuple["Graph", int]] = [(G.copy(), 1)]
+    tasks: list[tuple["Graph", int]] = []
+
+    while frontier and len(tasks) < target_tasks:
+        g, s = frontier.pop()
+        if not g.edges:
+            tasks.append((g, s))
+            continue
+
+        G1 = g
+        G2 = g.copy()
+
+        edge = next(iter(G1.edges))
+        a, b = tuple(edge)
+        id1, id2 = a.id, b.id
+
+        u = G2.ids[id1]
+        v = G2.ids[id2]
+
+        G1.contract_edge(edge)
+        G2.delete_edge(frozenset({u, v}))
+
+        frontier.append((G1, -s))
+        frontier.append((G2,  s))
+
+    # Anything left becomes tasks as-is.
+    tasks.extend(frontier)
+
+    # Run tasks in parallel (processes => real CPU parallelism).
+    coeffs = [0] * (n0 + 1)
+    ctx = mp.get_context("spawn")  # safe default across platforms
+
+    if workers == 1 or len(tasks) <= 1:
+        for g, s in tasks:
+            part = _chrompoly_subtree(g, s, n0)
+            for i, v in enumerate(part):
+                coeffs[i] += v
+    else:
+        with ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as ex:
+            for part in ex.map(_chrompoly_subtree, (g for g, _ in tasks), (s for _, s in tasks), (n0 for _ in tasks)):
+                for i, v in enumerate(part):
+                    coeffs[i] += v
+
+    return Polynomial(*coeffs)
+
 
 
 
@@ -80,13 +128,20 @@ def key_by_ids(G: Graph):
     if len(G.edges) > 12:
         return -1
     vs = frozenset(map(str, G.ids.keys()))
+    n = len(vs)
+    relabel = dict()
+    for i, j in zip(range(n), vs):
+        relabel[j] = str(i)
+    
 
     def norm_edge(e):
         a, b = tuple(e)
         ia, ib = a.id, b.id
-        return (ia, ib) if ia <= ib else (ib, ia)
+        return (relabel[ia], relabel[ib]) if relabel[ia] <= relabel[ib] else (relabel[ib], relabel[ia])
 
+    
     es = frozenset(norm_edge(e) for e in G.edges)
+    vs = frozenset(map(str, relabel.keys()))
 
     return (vs, es)
 
