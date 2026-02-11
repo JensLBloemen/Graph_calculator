@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from classes.graph import Graph
 
-TIMETEST = True
+TIMETEST = False
 NEWMODE = True
 
 from classes.polynomial import Polynomial
@@ -117,7 +117,7 @@ def get_chromatic_polynomial(G: "Graph", workers: int | None = None, task_factor
             for part in ex.map(_chrompoly_subtree, (g for g, _ in tasks), (s for _, s in tasks), (n0 for _ in tasks)):
                 for i, v in enumerate(part):
                     coeffs[i] += v
-
+    print(Polynomial(*coeffs))
     return Polynomial(*coeffs)
 
 

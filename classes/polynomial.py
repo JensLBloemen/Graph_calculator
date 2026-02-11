@@ -121,3 +121,72 @@ class Polynomial:
         if isinstance(other, Polynomial):
             return other.__mul__(self)
         return NotImplemented
+    
+    def __divmod__(self, other):
+        if not isinstance(other, Polynomial):
+            return NotImplemented
+
+        # trim local copies
+        a = list(self._terms)
+        b = list(other._terms)
+        while len(a) > 1 and a[-1] == 0:
+            a.pop()
+        while len(b) > 1 and b[-1] == 0:
+            b.pop()
+
+        # division by zero polynomial
+        if len(b) == 1 and b[0] == 0:
+            raise ZeroDivisionError("polynomial division by zero")
+
+        # zero dividend
+        if len(a) == 1 and a[0] == 0:
+            return Polynomial(0), Polynomial(0)
+
+        deg_a = len(a) - 1
+        deg_b = len(b) - 1
+
+        # degree too small => quotient 0, remainder is dividend
+        if deg_a < deg_b:
+            return Polynomial(0), self._trim(tuple(a))
+
+        q = [0] * (deg_a - deg_b + 1)
+
+        # long division (assumes exact division; will raise if not exact)
+        while deg_a >= deg_b and not (len(a) == 1 and a[0] == 0):
+            lead_a = a[-1]
+            lead_b = b[-1]
+
+            if lead_b == 0:
+                raise ZeroDivisionError("invalid divisor leading term is zero (after trim)")
+
+            # exact step (integer coeffs)
+            if lead_a % lead_b != 0:
+                raise ValueError("non-exact division (coefficients not divisible)")
+
+            coef = lead_a // lead_b
+            shift = deg_a - deg_b
+            q[shift] = coef
+
+            # subtract coef * b * x^shift from a
+            for i in range(deg_b + 1):
+                a[i + shift] -= coef * b[i]
+
+            # trim a and update deg_a
+            while len(a) > 1 and a[-1] == 0:
+                a.pop()
+            deg_a = len(a) - 1
+
+        return self._trim(tuple(q)), self._trim(tuple(a))
+
+    def __truediv__(self, other):
+        q, r = divmod(self, other)
+        if r != Polynomial(0):
+            raise ValueError("division has non-zero remainder")
+        return q
+
+    def __floordiv__(self, other):
+        # optional: allow p // q as exact division too
+        return self.__truediv__(other)
+
+    def __repr__(self):
+        return str(self)
