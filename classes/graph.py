@@ -22,8 +22,12 @@ class Graph:
 
     def add_vertex(self, vertex: Vertex) -> None:
         self.vertices.add(vertex)
-        while vertex.id in self.ids:
-            vertex.id += 1
+        if vertex.id in self.ids:
+            tmp_id = int(vertex.id)
+        
+            while str(tmp_id) in self.ids:
+                tmp_id += 1
+            vertex.id = str(tmp_id)
 
         self.ids[vertex.id] = vertex
 

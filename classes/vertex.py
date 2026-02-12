@@ -10,9 +10,9 @@ if TYPE_CHECKING:
 SELF_LOOPS = False
 
 class Vertex:
-    def __init__(self, graph: Graph, location: tuple[float, float], id: int):
+    def __init__(self, graph: Graph, location: tuple[float, float], id: str):
         self.location: tuple[float, float] = location
-        self.id: str = id
+        self.id: str = str(id)
         self.parent: Graph = graph
         self.neighbours: set[Vertex] = set()
 

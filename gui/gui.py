@@ -147,7 +147,10 @@ class App:
         self.plot()
 
     def save_graph(self):
+        self.selected_vertex = self.previous_selected = None
+        self.plot()
         self.graph.save()
+        self.fig.savefig(f"pics/{self.graph.name}", dpi = 300)
 
     # ---------------- Chromatic polynomial (kept from your code) ----------------
 
@@ -313,7 +316,6 @@ class App:
         self.plot(preserve_limits=False)
 
     # ---------------- Padded view helpers ----------------
-
     def _padded_limits(self, vertices):
         xs = [v.location[0] for v in vertices]
         ys = [v.location[1] for v in vertices]
@@ -357,7 +359,9 @@ class App:
             xlim = ylim = None
 
         self.plot1.clear()
+        self.plot1.set_title(self.graph.name)
         self.plot1.set_aspect("equal", adjustable="box")
+        self.plot1.axis("off")
 
         vertices = list(self.graph.vertices)
         if vertices:

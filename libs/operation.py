@@ -4,6 +4,18 @@ from classes.graph import Graph
 from classes.vertex import Vertex
 
 def operation(G: Graph, H: Graph) -> Graph:
+
+    # Make graphs the same size!
+    lengthG = abs(G.ids['s'].location[0] - G.ids['u'].location[0])
+    lengthH = abs(H.ids['s'].location[0] - H.ids['u'].location[0])
+    
+    for vertex in H.vertices:
+        x, y = vertex.location
+        x *= lengthG / lengthH
+        y *= lengthG / lengthH
+        vertex.location = (x,y)
+
+
     out = Graph()
 
     l = 1 / 2 ** 0.5
@@ -34,7 +46,7 @@ def operation(G: Graph, H: Graph) -> Graph:
         new_vertex = Vertex(out, location, identity)
         out.add_vertex(new_vertex)
     
-    for edge in G.edges:
+    for edge in H.edges:
         u, v = edge
 
         u1, v1 = out.ids[u.id+"_2"], out.ids[v.id+"_2"]

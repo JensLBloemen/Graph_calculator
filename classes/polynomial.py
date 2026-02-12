@@ -9,6 +9,8 @@ class Polynomial:
         return Polynomial(*terms)
 
     def __add__(self, other):
+        if type(other) == int:
+            other = Polynomial(other)
         if not isinstance(other, Polynomial):
             return NotImplemented
 
@@ -23,6 +25,8 @@ class Polynomial:
         return Polynomial(*(-t for t in self._terms))
 
     def __sub__(self, other):
+        if type(other) == int:
+            other = Polynomial(other)
         if not isinstance(other, Polynomial):
             return NotImplemented
         return self.__add__(-other)
@@ -89,6 +93,8 @@ class Polynomial:
         return "".join(out_parts)
 
     def __mul__(self, other):
+        if type(other) == int:
+            other = Polynomial(other)
         if not isinstance(other, Polynomial):
             return NotImplemented
 

@@ -117,7 +117,7 @@ def get_chromatic_polynomial(G: "Graph", workers: int | None = None, task_factor
             for part in ex.map(_chrompoly_subtree, (g for g, _ in tasks), (s for _, s in tasks), (n0 for _ in tasks)):
                 for i, v in enumerate(part):
                     coeffs[i] += v
-    print(Polynomial(*coeffs))
+    # print(Polynomial(*coeffs))
     return Polynomial(*coeffs)
 
 
@@ -203,7 +203,7 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
     assert 's' in G.ids and 'u' in G.ids and 't' in G.ids, "Does not contain sut vertices"
     start = time.time()
     def get111():
-        print("starting 111")
+        # print("starting 111")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -222,7 +222,7 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         return get_chromatic_polynomial(H, progress_cb)
         
     def get112():
-        print("starting 112")
+        # print("starting 112")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -238,7 +238,7 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         return get_chromatic_polynomial(H, progress_cb)
 
     def get122():
-        print("starting 122")
+        # print("starting 122")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -254,7 +254,7 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         return get_chromatic_polynomial(H, progress_cb)
     
     def get121():
-        print("starting 121")
+        # print("starting 121")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -270,7 +270,7 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         return get_chromatic_polynomial(H, progress_cb)
 
     def get123():
-        print("starting 123")
+        # print("starting 123")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
