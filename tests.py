@@ -49,9 +49,7 @@ def test1():
         except AssertionError:
             G.name = "TestFail"
             G.save()
-        except Exception as e:
-            print("Failure ", e)
-            raise RuntimeError
+            raise AssertionError
              
         message = f"Passed test: [{'-'*((i*40)//50)+' '*(40 - (i*40)//50)}]  {i}/50"
         stdout.write(message)
@@ -76,7 +74,7 @@ def test2():
         H = operation(G1, G2)
         try:
             assert get_all_chromatic_polynomials(H) ==  get(p1, p2)
-        except:
+        except AssertionError:
             G1.name = "Failure2_1"
             G1.save()
 

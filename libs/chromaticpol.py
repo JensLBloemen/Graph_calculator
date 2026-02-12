@@ -23,10 +23,6 @@ from classes.polynomial import Polynomial
 from itertools import repeat
 
 
-it = 0
-
-
-
 import os
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
@@ -63,7 +59,7 @@ def _chrompoly_subtree(graph: "Graph", sign: int, n0: int) -> list[int]:
 
     return coeffs
 
-
+it = 0
 def get_chromatic_polynomial(
     G: "Graph",
     workers: int | None = None,
