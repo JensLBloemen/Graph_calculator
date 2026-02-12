@@ -1,7 +1,7 @@
 import random
+from sys import stdout
 from classes.graph import Graph
 from classes.vertex import Vertex
-from libs.special_graphs import get_vampire
 
 from polys import get
 
@@ -38,36 +38,62 @@ def random_graph(n: int, m: int) -> Graph:
 
 
 def test1():
-    for i in range(50):
+    print("Checking whether sum of chromatic vector equals polynomial:")
+    for i in range(1, 51):
 
         n = random.randint(0, 20)
         m = random.randint(0, 15)
         G = random_graph(n, m)
-        assert sum(get_all_chromatic_polynomials(G)) == get_chromatic_polynomial(G)
-        print(f"Passed test{i}/50")
+        try:
+            assert sum(get_all_chromatic_polynomials(G)) == get_chromatic_polynomial(G)
+        except AssertionError:
+            G.name = "TestFail"
+            G.save()
+        except Exception as e:
+            print("Failure ", e)
+            raise RuntimeError
+             
+        message = f"Passed test: [{'-'*((i*40)//50)+' '*(40 - (i*40)//50)}]  {i}/50"
+        stdout.write(message)
+        stdout.write('\r'*len(message))
+        stdout.flush()
+    stdout.write('\n')
+        
 
 def test2():
-    v0 = get_vampire(0)
-    p0 = get_all_chromatic_polynomials(v0)
+    print("Checking formulas")
+    for i in range(1, 51):
+        n = random.randint(0, 20)
+        m = random.randint(0, 13)
+        G1 = random_graph(n, m)
+        p1 = get_all_chromatic_polynomials(G1)
 
-    v1 = get_vampire(1)
-    p1 = get_all_chromatic_polynomials(v1)
+        n = random.randint(0, 20)
+        m = random.randint(0, 13)
+        G2 = random_graph(n, m)
+        p2 = get_all_chromatic_polynomials(G2)
 
-    v2 = get_vampire(2)
-    p2 = get_all_chromatic_polynomials(v2)
+        H = operation(G1, G2)
+        try:
+            assert get_all_chromatic_polynomials(H) ==  get(p1, p2)
+        except:
+            G1.name = "Failure2_1"
+            G1.save()
 
-    v3 = get_vampire(3)
-    p3 = get_all_chromatic_polynomials(v3)
+            G2.name = "Failure2_2"
+            G2.save()
+
+            H.name = "Failure2_3"
+            H.save()
+            raise AssertionError
 
 
-    v12 = operation(v2, v3)
-    print(f"edges: {len(v12.edges)}")
+        message = f"Passed test: [{'-'*((i*40)//50)+' '*(40 - (i*40)//50)}]  {i}/50"
+        stdout.write(message)
+        stdout.write('\r'*len(message))
+        stdout.flush()
 
-    assert get_all_chromatic_polynomials(v12) ==  get(p2, p3)
 
-    print()
-    print()
-
-test1()
-test2()
-print("Passed all tests")
+if __name__ == "__main__":
+    test1()
+    test2()

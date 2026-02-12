@@ -17,9 +17,10 @@ if TYPE_CHECKING:
     from classes.graph import Graph
 
 TIMETEST = False
-NEWMODE = True
+NEWMODE = True   # True is high RAM demand, False is slower and high CPU demand
 
 from classes.polynomial import Polynomial
+from itertools import repeat
 
 
 it = 0
@@ -39,17 +40,20 @@ def _chrompoly_subtree(graph: "Graph", sign: int, n0: int) -> list[int]:
         g, s = stack.pop()
 
         if g.edges:
-            G1 = g
+            # IMPORTANT: both branches must be independent graphs
+            G1 = g.copy()
             G2 = g.copy()
 
+            # pick an edge from G1 (G2 has same ids, but different Vertex objects)
             edge = next(iter(G1.edges))
             a, b = tuple(edge)
-            id1, id2 = a.id, b.id
 
-            u = G2.ids[id1]
-            v = G2.ids[id2]
-
+            # contraction branch on G1
             G1.contract_edge(edge)
+
+            # deletion branch on G2 — MUST use vertices from G2
+            u = G2.ids[a.id]
+            v = G2.ids[b.id]
             G2.delete_edge(frozenset({u, v}))
 
             stack.append((G1, -s))
@@ -60,41 +64,49 @@ def _chrompoly_subtree(graph: "Graph", sign: int, n0: int) -> list[int]:
     return coeffs
 
 
-def get_chromatic_polynomial(G: "Graph", workers: int | None = None, task_factor: int = 4) -> "Polynomial":
+def get_chromatic_polynomial(
+    G: "Graph",
+    workers: int | None = None,
+    task_factor: int = 4,
+) -> "Polynomial":
     """
     Parallel deletion–contraction using process-based parallelism (uses all logical CPUs by default).
-    NOTE (Windows): call this from inside `if __name__ == "__main__":` (or an equivalent entrypoint).
+    NOTE (Windows/macOS): call this from inside `if __name__ == "__main__":` (or an equivalent entrypoint).
     """
     n0 = len(G.vertices)
     if n0 == 0:
-        return Polynomial(0)  # or Polynomial(1) depending on your convention
+        return Polynomial(1)  # standard convention: empty graph -> 1
 
     if workers is None:
         workers = os.cpu_count() or 1
     workers = max(1, int(workers))
+    task_factor = max(1, int(task_factor))
 
     # Build a frontier of independent subproblems to distribute.
-    target_tasks = max(workers * int(task_factor), 1)
+    target_tasks = max(workers * task_factor, 1)
     frontier: list[tuple["Graph", int]] = [(G.copy(), 1)]
     tasks: list[tuple["Graph", int]] = []
 
     while frontier and len(tasks) < target_tasks:
         g, s = frontier.pop()
+
         if not g.edges:
             tasks.append((g, s))
             continue
 
-        G1 = g
+        # IMPORTANT: both branches must be independent graphs
+        G1 = g.copy()
         G2 = g.copy()
 
         edge = next(iter(G1.edges))
         a, b = tuple(edge)
-        id1, id2 = a.id, b.id
 
-        u = G2.ids[id1]
-        v = G2.ids[id2]
-
+        # contraction branch
         G1.contract_edge(edge)
+
+        # deletion branch (use G2 vertices)
+        u = G2.ids[a.id]
+        v = G2.ids[b.id]
         G2.delete_edge(frozenset({u, v}))
 
         frontier.append((G1, -s))
@@ -103,9 +115,8 @@ def get_chromatic_polynomial(G: "Graph", workers: int | None = None, task_factor
     # Anything left becomes tasks as-is.
     tasks.extend(frontier)
 
-    # Run tasks in parallel (processes => real CPU parallelism).
+    # Accumulate results
     coeffs = [0] * (n0 + 1)
-    ctx = mp.get_context("spawn")  # safe default across platforms
 
     if workers == 1 or len(tasks) <= 1:
         for g, s in tasks:
@@ -113,15 +124,17 @@ def get_chromatic_polynomial(G: "Graph", workers: int | None = None, task_factor
             for i, v in enumerate(part):
                 coeffs[i] += v
     else:
+        # process-based parallelism (real CPU parallelism)
+        ctx = mp.get_context("spawn")  # safest across platforms
+        graphs = (g for g, _ in tasks)
+        signs = (s for _, s in tasks)
+
         with ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as ex:
-            for part in ex.map(_chrompoly_subtree, (g for g, _ in tasks), (s for _, s in tasks), (n0 for _ in tasks)):
+            for part in ex.map(_chrompoly_subtree, graphs, signs, repeat(n0)):
                 for i, v in enumerate(part):
                     coeffs[i] += v
-    # print(Polynomial(*coeffs))
+
     return Polynomial(*coeffs)
-
-
-
 
 def key_by_ids(G: Graph):
     # vertex ids (ook isolated vertices blijven zo in de key)
@@ -157,12 +170,13 @@ def pick_edge(G):
 
 
 def chrompol2(G: Graph, layer=0):
+    if len(G.vertices) == 1:
+        return Polynomial(0, 1)
+
     shift = 0
     to_delete = []
     for vertex in G.vertices:   # Remove isolated vertices
         if vertex.degree == 0:
-            if len(G.vertices) == 1:
-                return Polynomial(0, 1)
             to_delete.append(vertex)
             shift += 1
             
@@ -177,12 +191,10 @@ def chrompol2(G: Graph, layer=0):
         return lookup[keyG] * Polynomial(*([0 for _ in range(shift)]+[1]))
     if not G.edges:
         coeffs = [0 for _ in G.vertices] + [1]
-        return Polynomial(*coeffs)
+        return Polynomial(*coeffs) * Polynomial(*([0 for _ in range(shift)]+[1]))
     
     H = G.copy()
-    # edge = next(iter(G.edges))
     edge = pick_edge(G)
-    # edge = max((edge for edge in G.edges), key = lambda x: sum(y.degree for y in x))
     u, v = edge
     u2 = H.ids[u.id]
     v2 = H.ids[v.id]
@@ -203,7 +215,6 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
     assert 's' in G.ids and 'u' in G.ids and 't' in G.ids, "Does not contain sut vertices"
     start = time.time()
     def get111():
-        # print("starting 111")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -217,12 +228,11 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
 
         H.contract_edge((s, u))
         H.contract_edge((s, t))
-        if NEWMODE: return chrompol2(H) * Polynomial(0, -1)
+        if NEWMODE: return chrompol2(H)
         
         return get_chromatic_polynomial(H, progress_cb)
         
     def get112():
-        # print("starting 112")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -234,11 +244,10 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         H.add_edge((t, u))
 
         H.contract_edge((s, u))
-        if NEWMODE: return chrompol2(H) * Polynomial(0, -1)
+        if NEWMODE: return chrompol2(H)
         return get_chromatic_polynomial(H, progress_cb)
 
     def get122():
-        # print("starting 122")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -250,11 +259,10 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         H.add_edge((t, u))
 
         H.contract_edge((t, u))
-        if NEWMODE: return chrompol2(H) * Polynomial(0, -1)
+        if NEWMODE: return chrompol2(H)
         return get_chromatic_polynomial(H, progress_cb)
     
     def get121():
-        # print("starting 121")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -266,11 +274,10 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         H.add_edge((t, u))
 
         H.contract_edge((s, t))
-        if NEWMODE: return chrompol2(H) * Polynomial(0, -1)
+        if NEWMODE: return chrompol2(H)
         return get_chromatic_polynomial(H, progress_cb)
 
     def get123():
-        # print("starting 123")
         H = G.copy()
         s = H.ids['s']
         u = H.ids['u']
@@ -279,7 +286,7 @@ def get_all_chromatic_polynomials(G: Graph, progress_cb = None, NEWMODE = NEWMOD
         H.add_edge((s, u))
         H.add_edge((t, u))
         H.add_edge((t, s))
-        if NEWMODE: return chrompol2(H) * Polynomial(0, -1)
+        if NEWMODE: return chrompol2(H)
         return get_chromatic_polynomial(H, progress_cb)
 
     polys = (get111(), get112(), get121(), get122(), get123())

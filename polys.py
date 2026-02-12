@@ -67,8 +67,8 @@ def get122(p: tuple[P], q: tuple[P]) -> P:
 
 def get123(p: tuple[P], q: tuple[P]) -> P:
     r1 = p[4] * q[4] / (X*(X-1)*(X-2)) * (X-3)
-    r2 = p[4] * q[1] / (X*(X-1))
-    r3 = p[1] * q[1] / (X*(X-1)) * (X-2)
+    r2 = p[4] * q[2] / (X*(X-1))
+    r3 = p[2] * q[1] / (X*(X-1)) * (X-2)
     r4 = p[1] * q[4] / (X*(X-1))
     return r1 + r2 + r3 + r4
 

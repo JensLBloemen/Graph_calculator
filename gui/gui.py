@@ -113,9 +113,16 @@ class App:
     # ---------------- Graph editing ----------------
 
     def add_vertex(self):
-        vid = 1
-        while vid in self.graph.ids:
-            vid += 1
+        if not 's' in self.graph.ids:
+            vid = 's'
+        elif not 'u' in self.graph.ids:
+            vid = 'u'
+        elif not 't' in self.graph.ids:
+            vid = 't'
+        else:
+            vid = 1
+            while vid in self.graph.ids:
+                vid += 1
         new_vertex = Vertex(self.graph, (random(), random()), vid)
         self.graph.add_vertex(new_vertex)
         self.plot()
