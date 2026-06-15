@@ -186,11 +186,12 @@ class App:
 
 
                 polys = get_all_chromatic_polynomials(self.graph, progress_cb=progress_cb)
-                # print(str(sum(polys)), str(get_chromatic_polynomial(self.graph)))
-                # assert sum(polys) == poly
-                # out = 'sut      polynomial\n'
-                # for pol in polys:
-                #     out += "111     " + str(pol)+"\n"
+                print(sum(polys).roots())
+    
+                import matplotlib.pyplot as plt
+                roots = sum(polys).roots()
+                plt.scatter(roots.real, roots.imag)
+                plt.show()
 
                 rows = list(zip(["111", "112", "121", "122", "123"], polys))
                 sut_w = 3
@@ -384,14 +385,22 @@ class App:
 
             for v in vertices:
                 x0, y0 = v.location
-                if v.id in {'s', 't', 'u'}:
+                if v.id in {'t', 'u', 's'}:
                     self.plot1.annotate(
                         str(v.id),
                         (x0, y0),
                         textcoords="offset points",
                         xytext=(6, 6),
                         fontsize=10
-                )
+                    )
+                elif v.id == 's':
+                    self.plot1.annotate(
+                        str(v.id),
+                        (x0, self.graph.ids['u'].location[1]*-0.15),
+                        textcoords="offset points",
+                        xytext=(6, 6),
+                        fontsize=10
+                    )
 
             for edge in self.graph.edges:
                 u, v = tuple(edge)

@@ -1,6 +1,6 @@
 from classes.graph import Graph
 from classes.vertex import Vertex
-from libs.operation import operation
+from libs.operations import triangle
 from numpy import sin, cos, pi
 
 def create_full_graph(n):
@@ -34,7 +34,7 @@ def get_vampire(n):
     vampire = start_graph
     vampire.name = "vampire0"
     for i in range(n):
-        vampire = operation(vampire, vampire)
+        vampire = triangle(vampire, vampire)
         vampire.name = f"vampire{i+1}"
     return vampire
 

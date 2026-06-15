@@ -1,6 +1,23 @@
+import numpy as np
+
 class Polynomial:
     def __init__(self, *terms: int) -> None:
         self._terms = tuple(terms) if terms else (0,)
+
+    def roots(self) -> complex:
+        return np.roots(list(reversed(self._terms)))
+
+    def eval(self, value: complex) -> complex:
+        total = 0
+        it = 0
+        for a in self._terms:
+            total += a * value ** it
+            it += 1
+        return total
+
+    @property
+    def degree(self):
+        return len(self._terms) - 1
 
     def _trim(self, terms: tuple[int, ...]) -> "Polynomial":
         # trim trailing zeros (keep at least one term)
