@@ -40,14 +40,14 @@ x_max = 2.0001
 y_min = -1
 y_max = 1
 
-depth = 8                  # easy to change
+depth = 32                  # easy to change
 TEST_TYPE = "extended g-func"          # Either g-func, extended g-func, 
-YS_DEPTH = 20            # depth used inside get_ys
+YS_DEPTH = 100            # depth used inside get_ys
 IGNOREOLD = True
 
 NPY_DIR = "npy_files"
 OUT_PNG = "out.png"
-TITLE = "Wheel graphs"
+TITLE = f"Results of {TEST_TYPE} with {YS_DEPTH=}"
 
 CHUNKSIZE = 4
 MAX_WORKERS = os.cpu_count()
@@ -248,31 +248,6 @@ def get_vampire(n, q):
     return EEI
 
 
-def get_ys2(q, depth=20):
-    from random import choice, random
-
-    found = set([0])
-    ys = [0]
-
-    def f(y):
-        if y == 1:
-            return 0
-        return 1 + q / (y - 1)
-
-    for _ in range(depth):
-        y1 = choice(ys)
-        y2 = choice(ys)
-        if y1 * y2 not in found and random() < 0.5:
-            ys.append(y1 * y2)
-            found.add(y1 * y2)
-        else:
-            val = f(f(y1) * f(y2))
-            if val in found:
-                continue
-            ys.append(val)
-            found.add(val)
-    return ys
-
 
 def Fs(EEI, q):
     denom = EEI[1] + EEI[2] + q - 2
@@ -309,72 +284,65 @@ def star_power(base, n, q):
 # ============================================================
 
 def get_ys(q: complex, depth: int = 20) -> set[complex]:
-    """
-
-    Original logic:
-      start with stack = [(0, depth)]
-      for each popped (y, d):
-          for n = 2, ..., d-1:
-              z = f(y)**n
-              push (z, d//n)
-              add f(z) to found
-    """
     q = complex(q)
-    zero = 0j
-    f0 = 1 - q  # f(0)
 
     def f(y: complex) -> complex:
-        if y == 1:
-            return zero
         return 1 + q / (y - 1)
 
-    found: set[complex] = {zero}
-    stack: list[tuple[complex, int]] = [(zero, depth)]
-    seen_states: set[tuple[complex, int]] = {(zero, depth)}
-
-    stack_pop = stack.pop
-    stack_append = stack.append
-    found_add = found.add
-    seen_add = seen_states.add
+    found: set[complex] = {0j}
+    stack: list[tuple[complex, int]] = [(0j, depth)]
+    seen_states: set[tuple[complex, int]] = {(0j, depth)}
 
     while stack:
-        yval, cur_depth = stack_pop()
-        if cur_depth <= 2:
+        y, cur_depth = stack.pop()
+
+        if cur_depth < 2:
             continue
+               
+        if abs(y) > 1 or abs(f(y)) > 1:  # to combat overflow error
+            # found.add(y)
+            return set([y, f(y)])
 
-        fy = f(yval)
-
-        # Common special case
-        if fy == 0:
-            found_add(f0)
-            for n in range(2, cur_depth):
-                new_depth = cur_depth // n
-                if new_depth > 1:
-                    state = (zero, new_depth)
-                    if state not in seen_states:
-                        seen_add(state)
-                        stack_append(state)
-            continue
-
-        # p runs through fy**2, fy**3, ..., fy**(cur_depth-1)
-        p = fy * fy
-        for n in range(2, cur_depth):
-            if p == 1:
-                found_add(zero)
-            else:
-                found_add(1 + q / (p - 1))
-
+        for n in range(2, cur_depth+1):
             new_depth = cur_depth // n
-            if new_depth > 1:
-                state = (p, new_depth)
-                if state not in seen_states:
-                    seen_add(state)
-                    stack_append(state)
 
-            p *= fy
+            # 1. Parallel power: y^n ∈ E
+            y_parallel = y ** n
+            found.add(y_parallel)
+
+            if new_depth > 1:
+                state = (y_parallel, new_depth)
+                if state not in seen_states:
+                    seen_states.add(state)
+                    stack.append(state)
+
+            # 2. Series power: f(f(y)^n) ∈ E
+            # If y == 1, then f(y)=infinity, and f(infinity)=1.
+            if y == 1:
+                y_series = 1 + 0j
+            else:
+                fy = f(y)
+                if abs(fy) > 1:  # to combat overflow error
+                    found.add(f(fy))
+                    return set(fy)
+                p = fy ** n
+
+                # If p == 1, then f(p)=infinity.
+                # Skip if you only want finite complex values.
+                if p == 1:
+                    continue
+
+                y_series = f(p)
+
+            found.add(y_series)
+
+            if new_depth > 1:
+                state = (y_series, new_depth)
+                if state not in seen_states:
+                    seen_states.add(state)
+                    stack.append(state)
 
     return found
-
 
 # ============================================================
 # checkDense
@@ -382,17 +350,29 @@ def get_ys(q: complex, depth: int = 20) -> set[complex]:
 from tmp3 import build_generated_shape
 def checkDense(q: complex, depth_value: int = 2, projection: str = "Fs") -> int:
     ys = get_ys(q, depth=YS_DEPTH)
+    def f(y):
+        return 1 + (q) / (y - 1)
+    
+    def h(y):   # Spoke graph
+        return (y+q-2)/(y+q-3)
+    
+    def g(y):
+        return 1 + (q-1) / (y - 1)
+
+    if projection == "y-test":
+        if q in [0,1,2]:
+            return 1
+        
+        for y in ys:
+            if abs(y) >= 1 or abs(f(y)) >= 1:
+                return 1
+        return 0
+
+    if projection == "zerofree-SP":
+        return not build_generated_shape(q, 100, eps=0.01, max_abs=1, verbose=False)[2]
+       
 
     if projection == "g-func":
-        def g(y):
-            return 1 + (q-1) / (y - 1)
-
-        def f(y):
-            return 1 + (q) / (y - 1)
-
-        def h(y):   # Spoke graph
-            return (y+q-2)/(y+q-3)
-
         if q == 2 or q == 3:
             return 1
 
@@ -409,45 +389,36 @@ def checkDense(q: complex, depth_value: int = 2, projection: str = "Fs") -> int:
 
             if abs(2-q) < 1 and (abs(g(y)) > 1 or abs(g(h(y))) > 1):
                 return 1
+
             if abs(2-q) > 1 and (abs(g(y)) < 1 or abs(g(h(y))) < 1):
                 return 1
     
         return 0
     
     if projection == "extended g-func":
-        def g(y):
-            return 1 + (q-1) / (y - 1)
-        
-        def f(y):
-            return 1 + (q) / (y - 1)
-
         if abs(q-1) > 1:
             return 1
         if abs(2-q) > 1 and abs(q) > 1:
             return 1
-        
+
         for y in ys:
-            # for y2 in ys:
-            EEI = (0,y, 1, y)
+            if abs(y) > 1 or abs(f(y)) > 1:
+                return 1
+
+            EEI = (0, y, 1, 0)
             for i in range(1, depth_value):
                 EEI_it = star_power(EEI, i, q)
                 z = EEI_it[-1]
                 if z == 1:
                     continue
 
-                if abs(2-q) < 1 and abs(g(z)) > 1:
-
+                if abs(2-q) < 1 and (abs(g(z)) > 1 or abs(g(y)) > 1):
                     return 1
 
-                if abs(2-q) > 1 and abs(g(z)) < 1:
-                    if (q).imag == 0 :
-                        print(q, i, EEI_it, z)
+                if abs(2-q) > 1 and (abs(g(z)) < 1 or abs(g(y)) < 1):
                     return 1
 
         return 0
-                
-    
-
 
     raise ValueError("projection must be 'g-func' or ''")
 
@@ -463,7 +434,7 @@ def load_old_grid(n: int, npy_dir: str) -> np.ndarray:
         return old_grid
 
     for filename in listdir(npy_dir):
-        if not filename.endswith(".npy"):
+        if not filename.endswith(".npy") or "Zero" in filename:
             continue
 
         path = os.path.join(npy_dir, filename)
